@@ -12,13 +12,22 @@ want the card to light up when the device goes **off** (disconnected).
 Everything is configurable from the visual card editor. **Invert** sits under
 **Pulse** in the **Alert** section.
 
+> **Note:** This card was made with the help of AI (Claude, by Anthropic).
+> It has been tested and works, but please review it as you would any
+> community project before relying on it.
+
 ## Installation
 
-### HACS
+### Marketplace (Home Assistant 2026.11 or newer)
 
-1. HACS → ⋮ → **Custom repositories** → add this repository's URL with type **Dashboard**.
-2. Install **Alert card (invertible)**.
-3. Reload the browser.
+1. Go to **Settings → Marketplace**.
+2. Choose **Add from link** and enter this repository's URL:
+   `https://github.com/holdestmade/alert`
+   (Adding a custom repository asks you to connect a GitHub account the
+   first time; it only reads public information.)
+3. Install **Alert card (invertible)**. The Marketplace adds the dashboard
+   resource for you.
+4. Reload the browser.
 
 ### Manual
 
