@@ -1,59 +1,67 @@
-# Alert (with invert)
+# Alert card (invertible)
 
-A copy of Home Assistant's built-in [Alert](https://www.home-assistant.io/integrations/alert/)
-integration, packaged as a custom component, with one extra option: `invert`.
+A Home Assistant dashboard card that works like the built-in **Alert card**
+(the card tints, and can pulse, while an entity is in an alert state) with one
+extra option: **Invert**.
 
-With `invert: true` the alert fires while the watched entity is **not** in the
-configured `state`. This is handy for things like a network/ping binary sensor,
-where you want to be alerted when the device goes `off`.
+With **Invert** on, the card alerts while the entity is *not* in its usual
+alert state. That's handy for a network/connectivity binary sensor, where you
+want the card to light up when the device goes **off** (disconnected).
+`unknown` and `unavailable` never trigger an alert.
 
-When `invert` is on, `unknown` and `unavailable` states are ignored (the alert
-keeps whatever status it had), so a Home Assistant restart doesn't fire a
-spurious alert.
+Everything is configurable from the visual card editor. **Invert** sits under
+**Pulse** in the **Alert** section.
 
 ## Installation
 
-### Manual
-
-1. Copy the `custom_components/alert` folder into your Home Assistant
-   `config/custom_components/` folder, so you end up with
-   `config/custom_components/alert/manifest.json`.
-2. Restart Home Assistant.
-
-Because it uses the same `alert` domain, this custom component replaces the
-built-in Alert integration. Home Assistant will log a warning saying a custom
-integration is overriding a core one; that's expected. Your existing `alert:`
-YAML keeps working unchanged.
-
 ### HACS
 
-Add this repository as a custom repository (type: Integration) in HACS,
-install "Alert (with invert)", then restart Home Assistant.
+1. HACS → ⋮ → **Custom repositories** → add this repository's URL with type **Dashboard**.
+2. Install **Alert card (invertible)**.
+3. Reload the browser.
 
-## Configuration
+### Manual
+
+1. Copy `dist/invert-alert-card.js` to `config/www/invert-alert-card.js`.
+2. **Settings → Dashboards → ⋮ → Resources → Add resource**
+   - URL: `/local/invert-alert-card.js?v=1.0.0`
+   - Type: **JavaScript module**
+3. Reload the browser. (Bump the `?v=` number when you update the file.)
+
+Then edit a dashboard, **Add card**, and search for **Alert card (invertible)**.
+
+## YAML
 
 ```yaml
-alert:
-  router_offline:
-    name: Router is offline
-    entity_id: binary_sensor.router_ping
-    invert: true          # alert when the sensor is NOT "on"
-    repeat: 30
-    can_acknowledge: true
-    skip_first: false
-    message: "The router has gone offline"
-    done_message: "The router is back online"
-    notifiers:
-      - mobile_app_my_phone
+type: custom:invert-alert-card
+entity: binary_sensor.remote_ui
+invert: true
+pulse: true
+alert_color: red      # a theme colour name, a hex code, "state" or "none"
+clear_color: none
 ```
 
-All the standard options from the
-[core documentation](https://www.home-assistant.io/integrations/alert/) are
-supported. The added option:
+| Option              | Default      | Description |
+|---------------------|--------------|-------------|
+| `entity`            | *(required)* | Entity to watch. |
+| `invert`            | `false`      | Alert while the entity is **not** in its alert state. `unknown`/`unavailable` never alert. |
+| `pulse`             | `false`      | Animate the background while alerting (respects reduced motion). |
+| `alert_color`       | `state`      | Colour while alerting. With `state` and `invert` on, red is used (the inactive state colour is grey). |
+| `clear_color`       | none         | Colour while not alerting. |
+| `name`, `icon`      | from entity  | Override the name / icon. |
+| `show_state`        | `true`       | Show the state in the second line. |
+| `show_last_changed` | `true`       | Show when the state last changed. |
+| `show_area`         | `true`       | Show the entity's area. |
+| `tap_action`        | more-info    | Standard action config. |
+| `hold_action`       | none         | Standard action config. |
 
-| Option   | Default | Description |
-|----------|---------|-------------|
-| `invert` | `false` | Fire the alert while the watched entity is *not* in `state` (default `state` is `on`). `unknown`/`unavailable` are ignored. |
+### What counts as an "alert state"?
 
-The alert entity also exposes `watched_entity_id`, `alert_state` and `invert`
-as attributes so you can see how it's configured.
+| Domain                | Alert states |
+|-----------------------|--------------|
+| `lock`                | unlocked, unlocking, open, opening, jammed |
+| `cover`               | open, opening, closing |
+| `alarm_control_panel` | triggered, pending, arming |
+| everything else       | on, open, unlocked, detected, home, problem |
+
+`invert` flips this.

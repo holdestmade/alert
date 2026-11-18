@@ -1,4 +1,5 @@
 {
-  "name": "Alert (with invert)",
+  "name": "Alert card (invertible)",
+  "filename": "invert-alert-card.js",
   "render_readme": true
 }
