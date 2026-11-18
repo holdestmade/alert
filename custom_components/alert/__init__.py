@@ -3,8 +3,6 @@
 DEVELOPMENT OF THE ALERT INTEGRATION IS FROZEN.
 """
 
-import probatio
-
 from homeassistant.const import (
     CONF_ENTITY_ID,
     CONF_NAME,
@@ -22,11 +20,13 @@ from .const import (
     CONF_CAN_ACK,
     CONF_DATA,
     CONF_DONE_MESSAGE,
+    CONF_INVERT,
     CONF_NOTIFIERS,
     CONF_SKIP_FIRST,
     CONF_TITLE,
     DATA_COMPONENT,
     DEFAULT_CAN_ACK,
+    DEFAULT_INVERT,
     DEFAULT_SKIP_FIRST,
     DOMAIN,
     LOGGER,
@@ -34,13 +34,23 @@ from .const import (
 from .entity import AlertEntity
 from .services import async_setup_services
 
+try:
+    # Newer Home Assistant releases use probatio for config validation.
+    import probatio
+
+    _ENSURE_LIST = probatio.EnsureList()
+except ImportError:  # pragma: no cover - older Home Assistant releases
+    import voluptuous as probatio
+
+    _ENSURE_LIST = cv.ensure_list
+
 ALERT_SCHEMA = probatio.Schema(
     {
         probatio.Required(CONF_NAME): cv.string,
         probatio.Required(CONF_ENTITY_ID): cv.entity_id,
         probatio.Optional(CONF_STATE, default=STATE_ON): cv.string,
         probatio.Required(CONF_REPEAT): probatio.All(
-            probatio.EnsureList(),
+            _ENSURE_LIST,
             [probatio.Coerce(float)],
             # Minimum delay is 1 second = 0.016 minutes
             [probatio.Range(min=0.016)],
@@ -52,8 +62,9 @@ ALERT_SCHEMA = probatio.Schema(
         probatio.Optional(CONF_TITLE): cv.template,
         probatio.Optional(CONF_DATA): dict,
         probatio.Optional(CONF_NOTIFIERS, default=list): probatio.All(
-            probatio.EnsureList(), [cv.string]
+            _ENSURE_LIST, [cv.string]
         ),
+        probatio.Optional(CONF_INVERT, default=DEFAULT_INVERT): cv.boolean,
     }
 )
 
@@ -92,6 +103,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         can_ack = cfg[CONF_CAN_ACK]
         title_template = cfg.get(CONF_TITLE)
         data = cfg.get(CONF_DATA)
+        invert = cfg[CONF_INVERT]
 
         entities.append(
             AlertEntity(
@@ -108,6 +120,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 can_ack,
                 title_template,
                 data,
+                invert,
             )
         )
 

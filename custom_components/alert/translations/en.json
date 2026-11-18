@@ -1,26 +1,26 @@
 {
   "entity_component": {
     "_": {
-      "name": "[%key:component::alert::title%]",
+      "name": "Alert",
       "state": {
-        "idle": "[%key:common::state::idle%]",
+        "idle": "Idle",
         "off": "Acknowledged",
-        "on": "[%key:common::state::active%]"
+        "on": "Active"
       }
     }
   },
   "services": {
     "toggle": {
       "description": "Toggles alert's notifications.",
-      "name": "[%key:common::action::toggle%]"
+      "name": "Toggle"
     },
     "turn_off": {
       "description": "Silences alert's notifications.",
-      "name": "[%key:common::action::turn_off%]"
+      "name": "Turn off"
     },
     "turn_on": {
       "description": "Resets alert's notifications.",
-      "name": "[%key:common::action::turn_on%]"
+      "name": "Turn on"
     }
   },
   "title": "Alert"

@@ -13,7 +13,13 @@ from homeassistant.components.notify import (
     ATTR_TITLE,
     DOMAIN as NOTIFY_DOMAIN,
 )
-from homeassistant.const import STATE_IDLE, STATE_OFF, STATE_ON
+from homeassistant.const import (
+    STATE_IDLE,
+    STATE_OFF,
+    STATE_ON,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+)
 from homeassistant.core import Event, EventStateChangedData, HassJob, HomeAssistant
 from homeassistant.exceptions import ServiceNotFound, ServiceValidationError
 from homeassistant.helpers.entity import Entity
@@ -50,11 +56,13 @@ class AlertEntity(Entity):
         can_ack: bool,
         title_template: Template | None,
         data: dict[Any, Any],
+        invert: bool = False,
     ) -> None:
         """Initialize the alert."""
         self.hass = hass
         self._attr_name = name
         self._alert_state = state
+        self._invert = invert
         self._skip_first = skip_first
         self._data = data
 
@@ -85,7 +93,7 @@ class AlertEntity(Entity):
         await super().async_added_to_hass()
         if (
             (state := self.hass.states.get(self._watched_entity_id)) is not None
-            and state.state == self._alert_state
+            and self._should_alert(state.state)
             and not self._firing
         ):
             await self.begin_alerting()
@@ -100,15 +108,44 @@ class AlertEntity(Entity):
             return STATE_ON
         return STATE_IDLE
 
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the alert configuration attributes."""
+        return {
+            "watched_entity_id": self._watched_entity_id,
+            "alert_state": self._alert_state,
+            "invert": self._invert,
+        }
+
     async def watched_entity_change(self, event: Event[EventStateChangedData]) -> None:
         """Determine if the alert should start or stop."""
         if (to_state := event.data["new_state"]) is None:
             return
         LOGGER.debug("Watched entity (%s) has changed", event.data["entity_id"])
-        if to_state.state == self._alert_state and not self._firing:
+        should_alert = self._should_alert(to_state.state)
+        if should_alert is None:
+            # Unknown/unavailable while inverted: keep the current alert status.
+            return
+        if should_alert and not self._firing:
             await self.begin_alerting()
-        if to_state.state != self._alert_state and self._firing:
+        if not should_alert and self._firing:
             await self.end_alerting()
+
+    def _should_alert(self, state: str) -> bool | None:
+        """Return whether the watched entity state should trigger the alert.
+
+        Normally the alert fires while the watched entity is in the configured
+        state. With ``invert`` enabled the alert fires while the watched entity
+        is NOT in the configured state (e.g. a network binary sensor that is
+        ``off``). When inverted, ``unknown`` and ``unavailable`` states are
+        ignored (None is returned) so restarts don't cause spurious alerts.
+        """
+        if not self._invert:
+            return state == self._alert_state
+        if state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return None
+        return state != self._alert_state
 
     async def begin_alerting(self) -> None:
         """Begin the alert procedures."""

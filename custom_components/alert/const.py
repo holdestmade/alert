@@ -1,5 +1,7 @@
 """Constants for the Alert integration."""
 
+from __future__ import annotations
+
 from enum import StrEnum
 import logging
 from typing import TYPE_CHECKING, Final
@@ -23,9 +25,11 @@ CONF_ALERT_MESSAGE = "message"
 CONF_DONE_MESSAGE = "done_message"
 CONF_TITLE = "title"
 CONF_DATA = "data"
+CONF_INVERT = "invert"
 
 DEFAULT_CAN_ACK = True
 DEFAULT_SKIP_FIRST = False
+DEFAULT_INVERT = False
 
 
 class AlertService(StrEnum):
